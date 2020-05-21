@@ -170,9 +170,11 @@ class FileBuilder:
     optional version is the same, and all of the file system operations
     have the same results.
 
-    In addition, to save time, ``FileBuilder`` doesn&#39;t delete any of the
-    files written during the previous build unless it has to overwrite
-    them. The results of FileBuilder&#39;s file system methods, such as
+    In addition, to save time, ``FileBuilder`` doesn&#39;t initially delete
+    any of the files written during the previous build. It&#39;s possible
+    that many of these files won&#39;t need to be touched at all, because
+    their cache entries are still valid. For this and other reasons, the
+    results of ``FileBuilder``&#39;s file system methods, such as
     ``is_file`` and ``list_dir``, depend on the virtual state of the
     file system maintained by ``FileBuilder``, not simply on the real
     state of the file system.
@@ -2161,9 +2163,11 @@ so. Using a cached result is legitimate if the filename and function
 name are the same, the arguments to the function are the same, the
 optional version is the same, and all of the file system operations
 have the same results.</p>
-<p>In addition, to save time, <code>FileBuilder</code> doesn't delete any of the
-files written during the previous build unless it has to overwrite
-them. The results of FileBuilder's file system methods, such as
+<p>In addition, to save time, <code>FileBuilder</code> doesn't initially delete
+any of the files written during the previous build. It's possible
+that many of these files won't need to be touched at all, because
+their cache entries are still valid. For this and other reasons, the
+results of <code>FileBuilder</code>'s file system methods, such as
 <code>is_file</code> and <code>list_dir</code>, depend on the virtual state of the
 file system maintained by <code>FileBuilder</code>, not simply on the real
 state of the file system.</p>
@@ -2304,9 +2308,11 @@ with regard to parallelism; see
     optional version is the same, and all of the file system operations
     have the same results.
 
-    In addition, to save time, ``FileBuilder`` doesn&#39;t delete any of the
-    files written during the previous build unless it has to overwrite
-    them. The results of FileBuilder&#39;s file system methods, such as
+    In addition, to save time, ``FileBuilder`` doesn&#39;t initially delete
+    any of the files written during the previous build. It&#39;s possible
+    that many of these files won&#39;t need to be touched at all, because
+    their cache entries are still valid. For this and other reasons, the
+    results of ``FileBuilder``&#39;s file system methods, such as
     ``is_file`` and ``list_dir``, depend on the virtual state of the
     file system maintained by ``FileBuilder``, not simply on the real
     state of the file system.
