@@ -1,0 +1,15 @@
+com.github.btrekkie.graph
+com.github.btrekkie.graph.bc
+com.github.btrekkie.graph.dual
+com.github.btrekkie.graph.ec
+com.github.btrekkie.graph.planar
+com.github.btrekkie.graph.spqr
+com.github.btrekkie.graph.visibility
+com.github.btrekkie.programmatic_image
+com.github.btrekkie.reductions.bool
+com.github.btrekkie.reductions.mario
+com.github.btrekkie.reductions.planar
+com.github.btrekkie.reductions.pokemon
+com.github.btrekkie.reductions.push1
+com.github.btrekkie.reductions.zelda
+com.github.btrekkie.util
