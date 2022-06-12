@@ -24,7 +24,8 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from .rotation import Rotation
+<pre><code class="python">from ..image import Palette
+from .rotation import Rotation
 from .transport import Transport
 
 
@@ -34,6 +35,7 @@ class ClientConfig:
 
     # Private attributes:
     #
+    # Palette _palette - The color palette to use.
     # Rotation _rotation - The rotation to use when drawing to the Inkplate
     #     device.
     # StatusImages _status_images - The status images. See the comments for
@@ -62,6 +64,7 @@ class ClientConfig:
             self._transports = transport
         self._status_images = status_images
         self._wi_fi_networks = []
+        self._palette = Palette.THREE_BIT_GRAYSCALE
         self._rotation = Rotation.LANDSCAPE
 
     def add_wi_fi_network(self, ssid, password):
@@ -77,6 +80,17 @@ class ClientConfig:
             password (str): The network&#39;s password, if any.
         &#34;&#34;&#34;
         self._wi_fi_networks.append((ssid, password))
+
+    def set_palette(self, palette):
+        &#34;&#34;&#34;Set the color palette to use.
+
+        The default is ``Palette.THREE_BIT_GRAYSCALE``. This must be a
+        palette that the e-ink device supports.
+
+        Arguments:
+            palette (Palette): The palette.
+        &#34;&#34;&#34;
+        self._palette = palette
 
     def set_rotation(self, rotation):
         &#34;&#34;&#34;Set the rotation to use when drawing to the Inkplate device.
@@ -125,6 +139,7 @@ comments for <code>StatusImages</code>.</dd>
 
     # Private attributes:
     #
+    # Palette _palette - The color palette to use.
     # Rotation _rotation - The rotation to use when drawing to the Inkplate
     #     device.
     # StatusImages _status_images - The status images. See the comments for
@@ -153,6 +168,7 @@ comments for <code>StatusImages</code>.</dd>
             self._transports = transport
         self._status_images = status_images
         self._wi_fi_networks = []
+        self._palette = Palette.THREE_BIT_GRAYSCALE
         self._rotation = Rotation.LANDSCAPE
 
     def add_wi_fi_network(self, ssid, password):
@@ -168,6 +184,17 @@ comments for <code>StatusImages</code>.</dd>
             password (str): The network&#39;s password, if any.
         &#34;&#34;&#34;
         self._wi_fi_networks.append((ssid, password))
+
+    def set_palette(self, palette):
+        &#34;&#34;&#34;Set the color palette to use.
+
+        The default is ``Palette.THREE_BIT_GRAYSCALE``. This must be a
+        palette that the e-ink device supports.
+
+        Arguments:
+            palette (Palette): The palette.
+        &#34;&#34;&#34;
+        self._palette = palette
 
     def set_rotation(self, rotation):
         &#34;&#34;&#34;Set the rotation to use when drawing to the Inkplate device.
@@ -214,6 +241,34 @@ preference to networks from later calls.</p>
         password (str): The network&#39;s password, if any.
     &#34;&#34;&#34;
     self._wi_fi_networks.append((ssid, password))</code></pre>
+</details>
+</dd>
+<dt id="eink.generate.client_config.ClientConfig.set_palette"><code class="name flex">
+<span>def <span class="ident">set_palette</span></span>(<span>self, palette)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Set the color palette to use.</p>
+<p>The default is <code>Palette.THREE_BIT_GRAYSCALE</code>. This must be a
+palette that the e-ink device supports.</p>
+<h2 id="arguments">Arguments</h2>
+<dl>
+<dt><strong><code>palette</code></strong> :&ensp;<code>Palette</code></dt>
+<dd>The palette.</dd>
+</dl></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_palette(self, palette):
+    &#34;&#34;&#34;Set the color palette to use.
+
+    The default is ``Palette.THREE_BIT_GRAYSCALE``. This must be a
+    palette that the e-ink device supports.
+
+    Arguments:
+        palette (Palette): The palette.
+    &#34;&#34;&#34;
+    self._palette = palette</code></pre>
 </details>
 </dd>
 <dt id="eink.generate.client_config.ClientConfig.set_rotation"><code class="name flex">
@@ -264,6 +319,7 @@ preference to networks from later calls.</p>
 <h4><code><a title="eink.generate.client_config.ClientConfig" href="#eink.generate.client_config.ClientConfig">ClientConfig</a></code></h4>
 <ul class="">
 <li><code><a title="eink.generate.client_config.ClientConfig.add_wi_fi_network" href="#eink.generate.client_config.ClientConfig.add_wi_fi_network">add_wi_fi_network</a></code></li>
+<li><code><a title="eink.generate.client_config.ClientConfig.set_palette" href="#eink.generate.client_config.ClientConfig.set_palette">set_palette</a></code></li>
 <li><code><a title="eink.generate.client_config.ClientConfig.set_rotation" href="#eink.generate.client_config.ClientConfig.set_rotation">set_rotation</a></code></li>
 </ul>
 </li>

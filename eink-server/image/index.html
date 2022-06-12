@@ -25,14 +25,19 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">from .eink_graphics import EinkGraphics
+from .palette import Palette
 
-__all__ = [&#39;EinkGraphics&#39;]</code></pre>
+__all__ = [&#39;EinkGraphics&#39;, &#39;Palette&#39;]</code></pre>
 </details>
 </section>
 <section>
 <h2 class="section-title" id="header-submodules">Sub-modules</h2>
 <dl>
 <dt><code class="name"><a title="eink.image.eink_graphics" href="eink_graphics.html">eink.image.eink_graphics</a></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt><code class="name"><a title="eink.image.palette" href="palette.html">eink.image.palette</a></code></dt>
 <dd>
 <section class="desc"></section>
 </dd>
@@ -49,86 +54,14 @@ __all__ = [&#39;EinkGraphics&#39;]</code></pre>
 <span>class <span class="ident">EinkGraphics</span></span>
 </code></dt>
 <dd>
-<section class="desc"><p>Provides static methods pertaining to 3-bit grayscale.</p></section>
+<section class="desc"><p>Provides static methods for reducing images to e-ink display palettes.</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class EinkGraphics:
-    &#34;&#34;&#34;Provides static methods pertaining to 3-bit grayscale.&#34;&#34;&#34;
-
-    # The cached return value of _round_lookup_table()
-    _round_lookup_table_cache = None
-
-    # The cached return value of _eink_palette()
-    _eink_palette_cache = None
-
-    @staticmethod
-    def _color_3_to_8(color3):
-        &#34;&#34;&#34;Return the 8-bit color value for the specified 3-bit color.
-
-        This rounds to the nearest 8-bit color value.
-
-        Arguments:
-            color7 (int): The 3-bit color, in the range [0, 7].
-
-        Returns:
-            int: The 8-bit color, in the range [0, 255].
-        &#34;&#34;&#34;
-        # Compute int((255 * color7) / 7 + 0.5) using an integer division trick
-        return (2 * 255 * color3 + 7) // 14
-
-    @staticmethod
-    def _color_8_to_3(color8):
-        &#34;&#34;&#34;Return the 3-bit color value for the specified 8-bit color.
-
-        This rounds to the nearest 3-bit color value.
-
-        Arguments:
-            color8 (int): The 8-bit color, in the range [0, 255].
-
-        Returns:
-            int: The 3-bit color, in the range [0, 7].
-        &#34;&#34;&#34;
-        # Compute int((7 * color8) / 255 + 0.5) using an integer division trick
-        return (14 * color8 + 255) // (2 * 255)
-
-    @staticmethod
-    def _round_lookup_table():
-        &#34;&#34;&#34;Return a lookup table for rounding to the nearest 3-bit color.
-
-        The return value is an array of 256 elements. The (i + 1)th
-        element is ``_color_3_to_8(color_8_to_3(i))``.
-        &#34;&#34;&#34;
-        if EinkGraphics._round_lookup_table_cache is None:
-            EinkGraphics._round_lookup_table_cache = []
-            for color8 in range(256):
-                color3 = EinkGraphics._color_8_to_3(color8)
-                EinkGraphics._round_lookup_table_cache.append(
-                    EinkGraphics._color_3_to_8(color3))
-        return EinkGraphics._round_lookup_table_cache
-
-    @staticmethod
-    def _eink_palette():
-        &#34;&#34;&#34;Return an ``Image`` whose palette is all 3-bit colors.
-
-        Return an ``Image`` of mode ``&#39;P&#39;`` whose palette consists of
-        the 3-bit colors, i.e. of all possible return values of
-        ``_color_3_to_8``.
-        &#34;&#34;&#34;
-        if EinkGraphics._eink_palette_cache is None:
-            palette = []
-            for i in range(8):
-                color8 = EinkGraphics._color_3_to_8(i)
-                for j in range(3):
-                    palette.append(color8)
-            for i in range(3 * 8, 3 * 256):
-                palette.append(0)
-
-            EinkGraphics._eink_palette_cache = Image.new(&#39;P&#39;, (1, 1))
-            EinkGraphics._eink_palette_cache.putpalette(palette)
-        return EinkGraphics._eink_palette_cache
-
+    &#34;&#34;&#34;Provides static methods for reducing images to e-ink display palettes.
+    &#34;&#34;&#34;
     @staticmethod
     def _has_alpha(image):
         &#34;&#34;&#34;Return whether the specified ``Image`` has an alpha channel.&#34;&#34;&#34;
@@ -142,33 +75,31 @@ __all__ = [&#39;EinkGraphics&#39;]</code></pre>
             raise ValueError(&#39;Alpha channels are not supported&#39;)
 
     @staticmethod
-    def round(image):
-        &#34;&#34;&#34;Return the result of rounding the given image to 3-bit grayscale.
+    def round(image, palette=Palette.THREE_BIT_GRAYSCALE):
+        &#34;&#34;&#34;Return the result of rounding the given image to the given palette.
 
-        Return the result of converting the specified ``Image`` to mode
-        ``&#39;L&#39;`` and then rounding each pixel to the nearest 3-bit
-        grayscale value (and then rounding back to an 8-bit value). This
-        is a format suitable for display on an e-ink device. The image
-        may not have an alpha channel.
+        Return the result of rounding each pixel in the specified
+        ``Image`` to the nearest color in the specified ``Palette``.
+        This is a format suitable for display on an e-ink device. The
+        image may not have an alpha channel.
 
         This does not perform dithering. See also ``dither``.
         &#34;&#34;&#34;
         EinkGraphics._assert_doesnt_have_alpha(image)
-        return image.convert(&#39;L&#39;).point(EinkGraphics._round_lookup_table())
+        return image.convert(&#39;L&#39;).point(palette._round_lookup_table())
 
     @staticmethod
-    def dither(image):
-        &#34;&#34;&#34;Return the result of dithering the given image to 3-bit grayscale.
+    def dither(image, palette=Palette.THREE_BIT_GRAYSCALE):
+        &#34;&#34;&#34;Return the result of dithering the given image to the given palette.
 
-        Return the result of converting the specified ``Image`` to mode
-        ``&#39;L&#39;`` and then converting each pixel to a 3-bit grayscale
-        value (rounded back to an 8-bit value) using dithering. This is
-        a format suitable for display on an e-ink device. The image may
-        not have an alpha channel.
+        Return the result of converting each pixel in the specified
+        ``Image`` to a color in the specified ``Palette`` using
+        dithering. This is a format suitable for display on an e-ink
+        device. The image may not have an alpha channel.
 
-        Instead of simply rounding each pixel to the nearest 3-bit
-        color, we use dithering, which represents a region that is in
-        between two 3-bit colors by coloring its pixels using a
+        Instead of simply rounding each pixel to the nearest color in
+        the palette, we use dithering, which represents a region that is
+        in between two palette colors by coloring its pixels using a
         combination of those two colors. See
         https://en.wikipedia.org/wiki/Dither .
 
@@ -188,23 +119,22 @@ __all__ = [&#39;EinkGraphics&#39;]</code></pre>
         rgb_image = grayscale_image.convert(&#39;RGB&#39;)
 
         return rgb_image.quantize(
-            dither=Image.FLOYDSTEINBERG, palette=EinkGraphics._eink_palette())</code></pre>
+            dither=Image.FLOYDSTEINBERG, palette=palette._image())</code></pre>
 </details>
 <h3>Static methods</h3>
 <dl>
 <dt id="eink.image.EinkGraphics.dither"><code class="name flex">
-<span>def <span class="ident">dither</span></span>(<span>image)</span>
+<span>def <span class="ident">dither</span></span>(<span>image, palette=&lt;eink.image.palette.Palette object&gt;)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Return the result of dithering the given image to 3-bit grayscale.</p>
-<p>Return the result of converting the specified <code>Image</code> to mode
-<code>'L'</code> and then converting each pixel to a 3-bit grayscale
-value (rounded back to an 8-bit value) using dithering. This is
-a format suitable for display on an e-ink device. The image may
-not have an alpha channel.</p>
-<p>Instead of simply rounding each pixel to the nearest 3-bit
-color, we use dithering, which represents a region that is in
-between two 3-bit colors by coloring its pixels using a
+<section class="desc"><p>Return the result of dithering the given image to the given palette.</p>
+<p>Return the result of converting each pixel in the specified
+<code>Image</code> to a color in the specified <code>Palette</code> using
+dithering. This is a format suitable for display on an e-ink
+device. The image may not have an alpha channel.</p>
+<p>Instead of simply rounding each pixel to the nearest color in
+the palette, we use dithering, which represents a region that is
+in between two palette colors by coloring its pixels using a
 combination of those two colors. See
 <a href="https://en.wikipedia.org/wiki/Dither">https://en.wikipedia.org/wiki/Dither</a> .</p>
 <p>Dithering gives the result a speckled appearance that tends to
@@ -217,18 +147,17 @@ icons that have large areas of solid shading.</p></section>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@staticmethod
-def dither(image):
-    &#34;&#34;&#34;Return the result of dithering the given image to 3-bit grayscale.
+def dither(image, palette=Palette.THREE_BIT_GRAYSCALE):
+    &#34;&#34;&#34;Return the result of dithering the given image to the given palette.
 
-    Return the result of converting the specified ``Image`` to mode
-    ``&#39;L&#39;`` and then converting each pixel to a 3-bit grayscale
-    value (rounded back to an 8-bit value) using dithering. This is
-    a format suitable for display on an e-ink device. The image may
-    not have an alpha channel.
+    Return the result of converting each pixel in the specified
+    ``Image`` to a color in the specified ``Palette`` using
+    dithering. This is a format suitable for display on an e-ink
+    device. The image may not have an alpha channel.
 
-    Instead of simply rounding each pixel to the nearest 3-bit
-    color, we use dithering, which represents a region that is in
-    between two 3-bit colors by coloring its pixels using a
+    Instead of simply rounding each pixel to the nearest color in
+    the palette, we use dithering, which represents a region that is
+    in between two palette colors by coloring its pixels using a
     combination of those two colors. See
     https://en.wikipedia.org/wiki/Dither .
 
@@ -248,39 +177,134 @@ def dither(image):
     rgb_image = grayscale_image.convert(&#39;RGB&#39;)
 
     return rgb_image.quantize(
-        dither=Image.FLOYDSTEINBERG, palette=EinkGraphics._eink_palette())</code></pre>
+        dither=Image.FLOYDSTEINBERG, palette=palette._image())</code></pre>
 </details>
 </dd>
 <dt id="eink.image.EinkGraphics.round"><code class="name flex">
-<span>def <span class="ident">round</span></span>(<span>image)</span>
+<span>def <span class="ident">round</span></span>(<span>image, palette=&lt;eink.image.palette.Palette object&gt;)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Return the result of rounding the given image to 3-bit grayscale.</p>
-<p>Return the result of converting the specified <code>Image</code> to mode
-<code>'L'</code> and then rounding each pixel to the nearest 3-bit
-grayscale value (and then rounding back to an 8-bit value). This
-is a format suitable for display on an e-ink device. The image
-may not have an alpha channel.</p>
+<section class="desc"><p>Return the result of rounding the given image to the given palette.</p>
+<p>Return the result of rounding each pixel in the specified
+<code>Image</code> to the nearest color in the specified <code>Palette</code>.
+This is a format suitable for display on an e-ink device. The
+image may not have an alpha channel.</p>
 <p>This does not perform dithering. See also <code>dither</code>.</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@staticmethod
-def round(image):
-    &#34;&#34;&#34;Return the result of rounding the given image to 3-bit grayscale.
+def round(image, palette=Palette.THREE_BIT_GRAYSCALE):
+    &#34;&#34;&#34;Return the result of rounding the given image to the given palette.
 
-    Return the result of converting the specified ``Image`` to mode
-    ``&#39;L&#39;`` and then rounding each pixel to the nearest 3-bit
-    grayscale value (and then rounding back to an 8-bit value). This
-    is a format suitable for display on an e-ink device. The image
-    may not have an alpha channel.
+    Return the result of rounding each pixel in the specified
+    ``Image`` to the nearest color in the specified ``Palette``.
+    This is a format suitable for display on an e-ink device. The
+    image may not have an alpha channel.
 
     This does not perform dithering. See also ``dither``.
     &#34;&#34;&#34;
     EinkGraphics._assert_doesnt_have_alpha(image)
-    return image.convert(&#39;L&#39;).point(EinkGraphics._round_lookup_table())</code></pre>
+    return image.convert(&#39;L&#39;).point(palette._round_lookup_table())</code></pre>
 </details>
+</dd>
+</dl>
+</dd>
+<dt id="eink.image.Palette"><code class="flex name class">
+<span>class <span class="ident">Palette</span></span>
+<span>(</span><span>colors, name)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>A color palette for an e-ink device.</p>
+<p>The following palettes are supported:</p>
+<ul>
+<li><code>Palette.THREE_BIT_GRAYSCALE</code>: 3-bit grayscale, i.e. eight
+shades of gray.</li>
+<li><code>Palette.MONOCHROME</code>: Black and white.</li>
+</ul>
+<p>Private initializer.</p>
+<p>For now, only grayscale palettes are supported.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Palette:
+    &#34;&#34;&#34;A color palette for an e-ink device.
+
+    The following palettes are supported:
+
+    * ``Palette.THREE_BIT_GRAYSCALE``: 3-bit grayscale, i.e. eight
+      shades of gray.
+    * ``Palette.MONOCHROME``: Black and white.
+    &#34;&#34;&#34;
+
+    # Private attributes:
+    #
+    # list&lt;tuple&lt;int, int, int&gt;&gt; _colors - The colors in the palette. Each
+    #     color is represented as a tuple of the red, green, and blue
+    #     components, in the range [0, 255].
+    # Image _image_cache - The cached return value of _image().
+    # string _name - A string identifying the palette in client code. This
+    #     consists exclusively of underscores and uppercase letters.
+    # list&lt;int&gt; _round_lookup_table_cache - The cached return value of
+    #     _round_lookup_table().
+
+    def __init__(self, colors, name):
+        &#34;&#34;&#34;Private initializer.
+
+        For now, only grayscale palettes are supported.
+        &#34;&#34;&#34;
+        self._colors = colors
+        self._name = name
+        self._round_lookup_table_cache = None
+        self._image_cache = None
+
+    def _round_lookup_table(self):
+        &#34;&#34;&#34;Return a lookup table for rounding to the nearest color.
+
+        The return value is an array of 256 elements. The (i + 1)th
+        element is the red, green, and blue component of the palette
+        color nearest to the color (i, i, i) (with ties broken
+        arbitrarily).
+        &#34;&#34;&#34;
+        if self._round_lookup_table_cache is None:
+            self._round_lookup_table_cache = []
+            sorted_colors = sorted([color[0] for color in self._colors])
+            index = 0
+            for color in range(256):
+                if (index + 1 &lt; len(sorted_colors) and
+                        sorted_colors[index + 1] - color &lt;
+                        color - sorted_colors[index]):
+                    index += 1
+                self._round_lookup_table_cache.append(sorted_colors[index])
+        return self._round_lookup_table_cache
+
+    def _image(self):
+        &#34;&#34;&#34;Return an ``Image`` whose palette is the colors of this palette.
+
+        Return an ``Image`` of mode ``&#39;P&#39;`` whose palette consists of
+        the colors of this palette.
+        &#34;&#34;&#34;
+        if self._image_cache is None:
+            palette = []
+            for color in self._colors:
+                palette.extend(color)
+            palette.extend(self._colors[0] * (256 - len(self._colors)))
+
+            self._image_cache = Image.new(&#39;P&#39;, (1, 1))
+            self._image_cache.putpalette(palette)
+        return self._image_cache</code></pre>
+</details>
+<h3>Class variables</h3>
+<dl>
+<dt id="eink.image.Palette.MONOCHROME"><code class="name">var <span class="ident">MONOCHROME</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="eink.image.Palette.THREE_BIT_GRAYSCALE"><code class="name">var <span class="ident">THREE_BIT_GRAYSCALE</span></code></dt>
+<dd>
+<section class="desc"></section>
 </dd>
 </dl>
 </dd>
@@ -301,6 +325,7 @@ def round(image):
 <li><h3><a href="#header-submodules">Sub-modules</a></h3>
 <ul>
 <li><code><a title="eink.image.eink_graphics" href="eink_graphics.html">eink.image.eink_graphics</a></code></li>
+<li><code><a title="eink.image.palette" href="palette.html">eink.image.palette</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
@@ -310,6 +335,13 @@ def round(image):
 <ul class="">
 <li><code><a title="eink.image.EinkGraphics.dither" href="#eink.image.EinkGraphics.dither">dither</a></code></li>
 <li><code><a title="eink.image.EinkGraphics.round" href="#eink.image.EinkGraphics.round">round</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="eink.image.Palette" href="#eink.image.Palette">Palette</a></code></h4>
+<ul class="">
+<li><code><a title="eink.image.Palette.MONOCHROME" href="#eink.image.Palette.MONOCHROME">MONOCHROME</a></code></li>
+<li><code><a title="eink.image.Palette.THREE_BIT_GRAYSCALE" href="#eink.image.Palette.THREE_BIT_GRAYSCALE">THREE_BIT_GRAYSCALE</a></code></li>
 </ul>
 </li>
 </ul>
