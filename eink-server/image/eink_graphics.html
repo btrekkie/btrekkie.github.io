@@ -35,7 +35,7 @@ class EinkGraphics:
     @staticmethod
     def _has_alpha(image):
         &#34;&#34;&#34;Return whether the specified ``Image`` has an alpha channel.&#34;&#34;&#34;
-        return image.mode[:-1] in [&#39;A&#39;, &#39;a&#39;]
+        return image.mode[-1] in [&#39;A&#39;, &#39;a&#39;]
 
     @staticmethod
     def _assert_doesnt_have_alpha(image):
@@ -49,14 +49,26 @@ class EinkGraphics:
         &#34;&#34;&#34;Return the result of rounding the given image to the given palette.
 
         Return the result of rounding each pixel in the specified
-        ``Image`` to the nearest color in the specified ``Palette``.
-        This is a format suitable for display on an e-ink device. The
-        image may not have an alpha channel.
+        ``Image`` to roughly the nearest color in the specified
+        ``Palette``. This is a format suitable for display on an e-ink
+        device. The image may not have an alpha channel.
 
         This does not perform dithering. See also ``dither``.
         &#34;&#34;&#34;
         EinkGraphics._assert_doesnt_have_alpha(image)
-        return image.convert(&#39;L&#39;).point(palette._round_lookup_table())
+        if palette._is_grayscale:
+            # First convert to grayscale, in order to apply the luminosity
+            # transform function L = 0.299 * R + 0.587 * G + 0.114 * B
+            grayscale_image = image.convert(&#39;L&#39;)
+
+            # At time of writing, the &#34;quantize&#34; method rounds each component
+            # down to the nearest multiple of four before rounding a pixel to
+            # the nearest palette color. We can round pixels more accurately by
+            # calling &#34;point&#34; instead.
+            return grayscale_image.point(palette._round_lookup_table())
+        else:
+            return image.convert(&#39;RGB&#39;).quantize(
+                dither=Image.Dither.NONE, palette=palette._image())
 
     @staticmethod
     def dither(image, palette=Palette.THREE_BIT_GRAYSCALE):
@@ -80,16 +92,12 @@ class EinkGraphics:
         icons that have large areas of solid shading.
         &#34;&#34;&#34;
         EinkGraphics._assert_doesnt_have_alpha(image)
-
-        # First convert to grayscale, in order to apply the luminosity
-        # transform function L = 0.299 * R + 0.587 * G + 0.114 * B
-        grayscale_image = image.convert(&#39;L&#39;)
-
-        # Now convert to RGB, since the palette is RGB
-        rgb_image = grayscale_image.convert(&#39;RGB&#39;)
-
-        return rgb_image.quantize(
-            dither=Image.FLOYDSTEINBERG, palette=palette._image())</code></pre>
+        if palette._is_grayscale:
+            # First convert to grayscale, in order to apply the luminosity
+            # transform function L = 0.299 * R + 0.587 * G + 0.114 * B
+            image = image.convert(&#39;L&#39;)
+        return image.convert(&#39;RGB&#39;).quantize(
+            dither=Image.Dither.FLOYDSTEINBERG, palette=palette._image())</code></pre>
 </details>
 </section>
 <section>
@@ -116,7 +124,7 @@ class EinkGraphics:
     @staticmethod
     def _has_alpha(image):
         &#34;&#34;&#34;Return whether the specified ``Image`` has an alpha channel.&#34;&#34;&#34;
-        return image.mode[:-1] in [&#39;A&#39;, &#39;a&#39;]
+        return image.mode[-1] in [&#39;A&#39;, &#39;a&#39;]
 
     @staticmethod
     def _assert_doesnt_have_alpha(image):
@@ -130,14 +138,26 @@ class EinkGraphics:
         &#34;&#34;&#34;Return the result of rounding the given image to the given palette.
 
         Return the result of rounding each pixel in the specified
-        ``Image`` to the nearest color in the specified ``Palette``.
-        This is a format suitable for display on an e-ink device. The
-        image may not have an alpha channel.
+        ``Image`` to roughly the nearest color in the specified
+        ``Palette``. This is a format suitable for display on an e-ink
+        device. The image may not have an alpha channel.
 
         This does not perform dithering. See also ``dither``.
         &#34;&#34;&#34;
         EinkGraphics._assert_doesnt_have_alpha(image)
-        return image.convert(&#39;L&#39;).point(palette._round_lookup_table())
+        if palette._is_grayscale:
+            # First convert to grayscale, in order to apply the luminosity
+            # transform function L = 0.299 * R + 0.587 * G + 0.114 * B
+            grayscale_image = image.convert(&#39;L&#39;)
+
+            # At time of writing, the &#34;quantize&#34; method rounds each component
+            # down to the nearest multiple of four before rounding a pixel to
+            # the nearest palette color. We can round pixels more accurately by
+            # calling &#34;point&#34; instead.
+            return grayscale_image.point(palette._round_lookup_table())
+        else:
+            return image.convert(&#39;RGB&#39;).quantize(
+                dither=Image.Dither.NONE, palette=palette._image())
 
     @staticmethod
     def dither(image, palette=Palette.THREE_BIT_GRAYSCALE):
@@ -161,16 +181,12 @@ class EinkGraphics:
         icons that have large areas of solid shading.
         &#34;&#34;&#34;
         EinkGraphics._assert_doesnt_have_alpha(image)
-
-        # First convert to grayscale, in order to apply the luminosity
-        # transform function L = 0.299 * R + 0.587 * G + 0.114 * B
-        grayscale_image = image.convert(&#39;L&#39;)
-
-        # Now convert to RGB, since the palette is RGB
-        rgb_image = grayscale_image.convert(&#39;RGB&#39;)
-
-        return rgb_image.quantize(
-            dither=Image.FLOYDSTEINBERG, palette=palette._image())</code></pre>
+        if palette._is_grayscale:
+            # First convert to grayscale, in order to apply the luminosity
+            # transform function L = 0.299 * R + 0.587 * G + 0.114 * B
+            image = image.convert(&#39;L&#39;)
+        return image.convert(&#39;RGB&#39;).quantize(
+            dither=Image.Dither.FLOYDSTEINBERG, palette=palette._image())</code></pre>
 </details>
 <h3>Static methods</h3>
 <dl>
@@ -219,16 +235,12 @@ def dither(image, palette=Palette.THREE_BIT_GRAYSCALE):
     icons that have large areas of solid shading.
     &#34;&#34;&#34;
     EinkGraphics._assert_doesnt_have_alpha(image)
-
-    # First convert to grayscale, in order to apply the luminosity
-    # transform function L = 0.299 * R + 0.587 * G + 0.114 * B
-    grayscale_image = image.convert(&#39;L&#39;)
-
-    # Now convert to RGB, since the palette is RGB
-    rgb_image = grayscale_image.convert(&#39;RGB&#39;)
-
-    return rgb_image.quantize(
-        dither=Image.FLOYDSTEINBERG, palette=palette._image())</code></pre>
+    if palette._is_grayscale:
+        # First convert to grayscale, in order to apply the luminosity
+        # transform function L = 0.299 * R + 0.587 * G + 0.114 * B
+        image = image.convert(&#39;L&#39;)
+    return image.convert(&#39;RGB&#39;).quantize(
+        dither=Image.Dither.FLOYDSTEINBERG, palette=palette._image())</code></pre>
 </details>
 </dd>
 <dt id="eink.image.eink_graphics.EinkGraphics.round"><code class="name flex">
@@ -237,9 +249,9 @@ def dither(image, palette=Palette.THREE_BIT_GRAYSCALE):
 <dd>
 <section class="desc"><p>Return the result of rounding the given image to the given palette.</p>
 <p>Return the result of rounding each pixel in the specified
-<code>Image</code> to the nearest color in the specified <code>Palette</code>.
-This is a format suitable for display on an e-ink device. The
-image may not have an alpha channel.</p>
+<code>Image</code> to roughly the nearest color in the specified
+<code>Palette</code>. This is a format suitable for display on an e-ink
+device. The image may not have an alpha channel.</p>
 <p>This does not perform dithering. See also <code>dither</code>.</p></section>
 <details class="source">
 <summary>
@@ -250,14 +262,26 @@ def round(image, palette=Palette.THREE_BIT_GRAYSCALE):
     &#34;&#34;&#34;Return the result of rounding the given image to the given palette.
 
     Return the result of rounding each pixel in the specified
-    ``Image`` to the nearest color in the specified ``Palette``.
-    This is a format suitable for display on an e-ink device. The
-    image may not have an alpha channel.
+    ``Image`` to roughly the nearest color in the specified
+    ``Palette``. This is a format suitable for display on an e-ink
+    device. The image may not have an alpha channel.
 
     This does not perform dithering. See also ``dither``.
     &#34;&#34;&#34;
     EinkGraphics._assert_doesnt_have_alpha(image)
-    return image.convert(&#39;L&#39;).point(palette._round_lookup_table())</code></pre>
+    if palette._is_grayscale:
+        # First convert to grayscale, in order to apply the luminosity
+        # transform function L = 0.299 * R + 0.587 * G + 0.114 * B
+        grayscale_image = image.convert(&#39;L&#39;)
+
+        # At time of writing, the &#34;quantize&#34; method rounds each component
+        # down to the nearest multiple of four before rounding a pixel to
+        # the nearest palette color. We can round pixels more accurately by
+        # calling &#34;point&#34; instead.
+        return grayscale_image.point(palette._round_lookup_table())
+    else:
+        return image.convert(&#39;RGB&#39;).quantize(
+            dither=Image.Dither.NONE, palette=palette._image())</code></pre>
 </details>
 </dd>
 </dl>

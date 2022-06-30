@@ -65,7 +65,7 @@ __all__ = [&#39;EinkGraphics&#39;, &#39;Palette&#39;]</code></pre>
     @staticmethod
     def _has_alpha(image):
         &#34;&#34;&#34;Return whether the specified ``Image`` has an alpha channel.&#34;&#34;&#34;
-        return image.mode[:-1] in [&#39;A&#39;, &#39;a&#39;]
+        return image.mode[-1] in [&#39;A&#39;, &#39;a&#39;]
 
     @staticmethod
     def _assert_doesnt_have_alpha(image):
@@ -79,14 +79,26 @@ __all__ = [&#39;EinkGraphics&#39;, &#39;Palette&#39;]</code></pre>
         &#34;&#34;&#34;Return the result of rounding the given image to the given palette.
 
         Return the result of rounding each pixel in the specified
-        ``Image`` to the nearest color in the specified ``Palette``.
-        This is a format suitable for display on an e-ink device. The
-        image may not have an alpha channel.
+        ``Image`` to roughly the nearest color in the specified
+        ``Palette``. This is a format suitable for display on an e-ink
+        device. The image may not have an alpha channel.
 
         This does not perform dithering. See also ``dither``.
         &#34;&#34;&#34;
         EinkGraphics._assert_doesnt_have_alpha(image)
-        return image.convert(&#39;L&#39;).point(palette._round_lookup_table())
+        if palette._is_grayscale:
+            # First convert to grayscale, in order to apply the luminosity
+            # transform function L = 0.299 * R + 0.587 * G + 0.114 * B
+            grayscale_image = image.convert(&#39;L&#39;)
+
+            # At time of writing, the &#34;quantize&#34; method rounds each component
+            # down to the nearest multiple of four before rounding a pixel to
+            # the nearest palette color. We can round pixels more accurately by
+            # calling &#34;point&#34; instead.
+            return grayscale_image.point(palette._round_lookup_table())
+        else:
+            return image.convert(&#39;RGB&#39;).quantize(
+                dither=Image.Dither.NONE, palette=palette._image())
 
     @staticmethod
     def dither(image, palette=Palette.THREE_BIT_GRAYSCALE):
@@ -110,16 +122,12 @@ __all__ = [&#39;EinkGraphics&#39;, &#39;Palette&#39;]</code></pre>
         icons that have large areas of solid shading.
         &#34;&#34;&#34;
         EinkGraphics._assert_doesnt_have_alpha(image)
-
-        # First convert to grayscale, in order to apply the luminosity
-        # transform function L = 0.299 * R + 0.587 * G + 0.114 * B
-        grayscale_image = image.convert(&#39;L&#39;)
-
-        # Now convert to RGB, since the palette is RGB
-        rgb_image = grayscale_image.convert(&#39;RGB&#39;)
-
-        return rgb_image.quantize(
-            dither=Image.FLOYDSTEINBERG, palette=palette._image())</code></pre>
+        if palette._is_grayscale:
+            # First convert to grayscale, in order to apply the luminosity
+            # transform function L = 0.299 * R + 0.587 * G + 0.114 * B
+            image = image.convert(&#39;L&#39;)
+        return image.convert(&#39;RGB&#39;).quantize(
+            dither=Image.Dither.FLOYDSTEINBERG, palette=palette._image())</code></pre>
 </details>
 <h3>Static methods</h3>
 <dl>
@@ -168,16 +176,12 @@ def dither(image, palette=Palette.THREE_BIT_GRAYSCALE):
     icons that have large areas of solid shading.
     &#34;&#34;&#34;
     EinkGraphics._assert_doesnt_have_alpha(image)
-
-    # First convert to grayscale, in order to apply the luminosity
-    # transform function L = 0.299 * R + 0.587 * G + 0.114 * B
-    grayscale_image = image.convert(&#39;L&#39;)
-
-    # Now convert to RGB, since the palette is RGB
-    rgb_image = grayscale_image.convert(&#39;RGB&#39;)
-
-    return rgb_image.quantize(
-        dither=Image.FLOYDSTEINBERG, palette=palette._image())</code></pre>
+    if palette._is_grayscale:
+        # First convert to grayscale, in order to apply the luminosity
+        # transform function L = 0.299 * R + 0.587 * G + 0.114 * B
+        image = image.convert(&#39;L&#39;)
+    return image.convert(&#39;RGB&#39;).quantize(
+        dither=Image.Dither.FLOYDSTEINBERG, palette=palette._image())</code></pre>
 </details>
 </dd>
 <dt id="eink.image.EinkGraphics.round"><code class="name flex">
@@ -186,9 +190,9 @@ def dither(image, palette=Palette.THREE_BIT_GRAYSCALE):
 <dd>
 <section class="desc"><p>Return the result of rounding the given image to the given palette.</p>
 <p>Return the result of rounding each pixel in the specified
-<code>Image</code> to the nearest color in the specified <code>Palette</code>.
-This is a format suitable for display on an e-ink device. The
-image may not have an alpha channel.</p>
+<code>Image</code> to roughly the nearest color in the specified
+<code>Palette</code>. This is a format suitable for display on an e-ink
+device. The image may not have an alpha channel.</p>
 <p>This does not perform dithering. See also <code>dither</code>.</p></section>
 <details class="source">
 <summary>
@@ -199,14 +203,26 @@ def round(image, palette=Palette.THREE_BIT_GRAYSCALE):
     &#34;&#34;&#34;Return the result of rounding the given image to the given palette.
 
     Return the result of rounding each pixel in the specified
-    ``Image`` to the nearest color in the specified ``Palette``.
-    This is a format suitable for display on an e-ink device. The
-    image may not have an alpha channel.
+    ``Image`` to roughly the nearest color in the specified
+    ``Palette``. This is a format suitable for display on an e-ink
+    device. The image may not have an alpha channel.
 
     This does not perform dithering. See also ``dither``.
     &#34;&#34;&#34;
     EinkGraphics._assert_doesnt_have_alpha(image)
-    return image.convert(&#39;L&#39;).point(palette._round_lookup_table())</code></pre>
+    if palette._is_grayscale:
+        # First convert to grayscale, in order to apply the luminosity
+        # transform function L = 0.299 * R + 0.587 * G + 0.114 * B
+        grayscale_image = image.convert(&#39;L&#39;)
+
+        # At time of writing, the &#34;quantize&#34; method rounds each component
+        # down to the nearest multiple of four before rounding a pixel to
+        # the nearest palette color. We can round pixels more accurately by
+        # calling &#34;point&#34; instead.
+        return grayscale_image.point(palette._round_lookup_table())
+    else:
+        return image.convert(&#39;RGB&#39;).quantize(
+            dither=Image.Dither.NONE, palette=palette._image())</code></pre>
 </details>
 </dd>
 </dl>
@@ -222,9 +238,11 @@ def round(image, palette=Palette.THREE_BIT_GRAYSCALE):
 <li><code>Palette.THREE_BIT_GRAYSCALE</code>: 3-bit grayscale, i.e. eight
 shades of gray.</li>
 <li><code>Palette.MONOCHROME</code>: Black and white.</li>
+<li><code>Palette.SEVEN_COLOR</code>: The palette for color Inkplate devices.
+This has the following seven colors: black, white, red, green,
+blue, yellow, and orange.</li>
 </ul>
-<p>Private initializer.</p>
-<p>For now, only grayscale palettes are supported.</p></section>
+<p>Private initializer.</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -237,6 +255,9 @@ shades of gray.</li>
     * ``Palette.THREE_BIT_GRAYSCALE``: 3-bit grayscale, i.e. eight
       shades of gray.
     * ``Palette.MONOCHROME``: Black and white.
+    * ``Palette.SEVEN_COLOR``: The palette for color Inkplate devices.
+      This has the following seven colors: black, white, red, green,
+      blue, yellow, and orange.
     &#34;&#34;&#34;
 
     # Private attributes:
@@ -245,28 +266,36 @@ shades of gray.</li>
     #     color is represented as a tuple of the red, green, and blue
     #     components, in the range [0, 255].
     # Image _image_cache - The cached return value of _image().
+    # bool _is_grayscale - Whether the palette consists exclusively of
+    #     grayscale colors.
     # string _name - A string identifying the palette in client code. This
     #     consists exclusively of underscores and uppercase letters.
     # list&lt;int&gt; _round_lookup_table_cache - The cached return value of
     #     _round_lookup_table().
 
     def __init__(self, colors, name):
-        &#34;&#34;&#34;Private initializer.
+        &#34;&#34;&#34;Private initializer.&#34;&#34;&#34;
+        if len(colors) &gt; 256:
+            raise ValueError(&#39;Palette only supports up to 256 colors&#39;)
 
-        For now, only grayscale palettes are supported.
-        &#34;&#34;&#34;
         self._colors = colors
         self._name = name
         self._round_lookup_table_cache = None
         self._image_cache = None
 
-    def _round_lookup_table(self):
-        &#34;&#34;&#34;Return a lookup table for rounding to the nearest color.
+        self._is_grayscale = True
+        for color in colors:
+            if color[0] != color[1] or color[0] != color[2]:
+                self._is_grayscale = False
+                break
 
-        The return value is an array of 256 elements. The (i + 1)th
-        element is the red, green, and blue component of the palette
-        color nearest to the color (i, i, i) (with ties broken
-        arbitrarily).
+    def _round_lookup_table(self):
+        &#34;&#34;&#34;Return a lookup table for rounding to the nearest grayscale color.
+
+        Assume that ``_is_grayscale`` is true. The return value is an
+        array of 256 integers. The (i + 1)th element is the red, green,
+        and blue component of the palette color nearest to the color
+        ``(i, i, i)`` (with ties broken arbitrarily).
         &#34;&#34;&#34;
         if self._round_lookup_table_cache is None:
             self._round_lookup_table_cache = []
@@ -290,8 +319,6 @@ shades of gray.</li>
             palette = []
             for color in self._colors:
                 palette.extend(color)
-            palette.extend(self._colors[0] * (256 - len(self._colors)))
-
             self._image_cache = Image.new(&#39;P&#39;, (1, 1))
             self._image_cache.putpalette(palette)
         return self._image_cache</code></pre>
@@ -299,6 +326,10 @@ shades of gray.</li>
 <h3>Class variables</h3>
 <dl>
 <dt id="eink.image.Palette.MONOCHROME"><code class="name">var <span class="ident">MONOCHROME</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="eink.image.Palette.SEVEN_COLOR"><code class="name">var <span class="ident">SEVEN_COLOR</span></code></dt>
 <dd>
 <section class="desc"></section>
 </dd>
@@ -341,6 +372,7 @@ shades of gray.</li>
 <h4><code><a title="eink.image.Palette" href="#eink.image.Palette">Palette</a></code></h4>
 <ul class="">
 <li><code><a title="eink.image.Palette.MONOCHROME" href="#eink.image.Palette.MONOCHROME">MONOCHROME</a></code></li>
+<li><code><a title="eink.image.Palette.SEVEN_COLOR" href="#eink.image.Palette.SEVEN_COLOR">SEVEN_COLOR</a></code></li>
 <li><code><a title="eink.image.Palette.THREE_BIT_GRAYSCALE" href="#eink.image.Palette.THREE_BIT_GRAYSCALE">THREE_BIT_GRAYSCALE</a></code></li>
 </ul>
 </li>
