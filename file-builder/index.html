@@ -460,7 +460,7 @@ with regard to parallelism; see
           build, and restore all of the files and directories written
           during the previous build (even if they had changed) and the
           old contents of ``cache_filename``. Also, restore the old
-          contents of any files that ``build_file*` overwrote.
+          contents of any files that ``build_file*`` overwrote.
 
         However, ``build_versioned`` doesn&#39;t literally follow the above
         steps. Instead, it uses cached results from the previous build
@@ -704,9 +704,9 @@ with regard to parallelism; see
         arguments passed to ``func`` are copies of ``args`` and
         ``kwargs``, rather than direct references. In such cases, we can
         smuggle in the arguments either by binding them using
-        ``functools.partial``, or by making them fields of the some
-        object (e.g. ``self._my_executor``) and passing in one of the
-        object&#39;s methods for ``func`` (e.g. ``self._my_build_file``).
+        ``functools.partial``, or by making them fields of some object
+        (e.g. ``self._my_executor``) and passing in one of the object&#39;s
+        methods for ``func`` (e.g. ``self._my_build_file``).
 
         Arguments:
             filename (pathlike): The file we are writing. This must be a
@@ -2226,7 +2226,7 @@ all of the files and directories created during the current
 build, and restore all of the files and directories written
 during the previous build (even if they had changed) and the
 old contents of <code>cache_filename</code>. Also, restore the old
-contents of any files that <code>`build_file*</code> overwrote.</li>
+contents of any files that <code>build_file*</code> overwrote.</li>
 </ul>
 <p>However, <code>build_versioned</code> doesn't literally follow the above
 steps. Instead, it uses cached results from the previous build
@@ -2333,7 +2333,7 @@ def build_versioned(
       build, and restore all of the files and directories written
       during the previous build (even if they had changed) and the
       old contents of ``cache_filename``. Also, restore the old
-      contents of any files that ``build_file*` overwrote.
+      contents of any files that ``build_file*`` overwrote.
 
     However, ``build_versioned`` doesn&#39;t literally follow the above
     steps. Instead, it uses cached results from the previous build
@@ -2632,9 +2632,9 @@ include <code>ThreadPoolExecutors</code> and instances of
 arguments passed to <code>func</code> are copies of <code>args</code> and
 <code>kwargs</code>, rather than direct references. In such cases, we can
 smuggle in the arguments either by binding them using
-<code>functools.partial</code>, or by making them fields of the some
-object (e.g. <code>self._my_executor</code>) and passing in one of the
-object's methods for <code>func</code> (e.g. <code>self._my_build_file</code>).</p>
+<code>functools.partial</code>, or by making them fields of some object
+(e.g. <code>self._my_executor</code>) and passing in one of the object's
+methods for <code>func</code> (e.g. <code>self._my_build_file</code>).</p>
 <h2 id="arguments">Arguments</h2>
 <dl>
 <dt><strong><code>filename</code></strong> :&ensp;<code>pathlike</code></dt>
@@ -2751,9 +2751,9 @@ instance has finished executing the relevant call to
     arguments passed to ``func`` are copies of ``args`` and
     ``kwargs``, rather than direct references. In such cases, we can
     smuggle in the arguments either by binding them using
-    ``functools.partial``, or by making them fields of the some
-    object (e.g. ``self._my_executor``) and passing in one of the
-    object&#39;s methods for ``func`` (e.g. ``self._my_build_file``).
+    ``functools.partial``, or by making them fields of some object
+    (e.g. ``self._my_executor``) and passing in one of the object&#39;s
+    methods for ``func`` (e.g. ``self._my_build_file``).
 
     Arguments:
         filename (pathlike): The file we are writing. This must be a

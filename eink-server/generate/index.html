@@ -913,8 +913,9 @@ palette that the e-ink device supports.</p>
         The basic procedure is something like this:
 
         * Display the prompt.
-        * If nothing is entered, return the default value.
-        * Otherwise, validate the value using validation_func.
+        * If nothing is entered, return the default value if there is
+          one. If not, print an error message and repeat.
+        * Otherwise, validate the value using ``validation_func``.
         * If valid, return the value entered.
         * If invalid, print an error message and repeat.
 
@@ -924,25 +925,29 @@ palette that the e-ink device supports.</p>
             prompt (str): Text to present to the user indicating what
                 information to enter.
             default (str): The value to return if the user enters the
-                empty string. If this is ``None``, then we return
-                ``&#39;&#39;``.
-            validation_func (callable): A function for validating the
-                result. If it raises a ``RuntimeError`` when we pass in
-                the value the user entered, then that value is not
-                permitted. Such errors should have messages that are
-                suitable to display to the user.
+                empty string. If this is ``None``, then there is no
+                default value, and we require the user to enter a
+                non-empty string.
+            validation_func (callable): The function for validating the
+                result, if any. If it raises a ``ValueError`` when we
+                pass in the value the user entered, then that value is
+                not permitted. Such errors should have messages that are
+                suitable to display to the user. We do not check
+                ``validation_func`` if the user enters the empty string.
             hidden (bool): Whether to hide the user&#39;s input as he enters
                 it. This is useful for passwords.
 
         Returns:
             str: The value the user entered, or the default value.
         &#34;&#34;&#34;
-        if default is None:
-            default = &#39;&#39;
-        if prompt.endswith(&#39;\n&#39;):
-            prompt_with_default = &#39;{:s}[{:s}] &#39;.format(prompt, default)
+        if default is not None:
+            default_str = default
         else:
-            prompt_with_default = &#39;{:s} [{:s}] &#39;.format(prompt, default)
+            default_str = &#39;&#39;
+        if prompt.endswith(&#39;\n&#39;):
+            prompt_with_default = &#39;{:s}[{:s}] &#39;.format(prompt, default_str)
+        else:
+            prompt_with_default = &#39;{:s} [{:s}] &#39;.format(prompt, default_str)
 
         while True:
             if hidden:
@@ -951,18 +956,61 @@ palette that the e-ink device supports.</p>
                 value = input(prompt_with_default)
 
             if value == &#39;&#39;:
+                if default is None:
+                    print()
+                    print(&#39;Please enter a value&#39;)
+                    print()
+                    continue
                 return default
             elif validation_func is None:
                 return value
 
             try:
                 validation_func(value)
-            except RuntimeError as error:
+            except ValueError as error:
                 print()
-                print(error.message)
+                print(error)
                 print()
             else:
                 return value
+
+    @staticmethod
+    def _input_multiple_choice(prompt, options, default):
+        &#34;&#34;&#34;Prompt the user to select from a list of options.
+
+        The basic procedure is similar to that of ``_input``.
+
+        Arguments:
+            prompt (str): Text to present to the user indicating what
+                information to enter.
+            options (list&lt;tuple&lt;str, object&gt;&gt;): An array of the possible
+                options. Each option is represented as a pair of a
+                human-readable string identifying the option and the
+                value for the option.
+            default (str): The index in ``options`` of the option to
+                select if the user enters the empty string. If this is
+                ``None``, then there is no default option, and we
+                require the user to enter a non-empty string.
+
+        Returns:
+            object: The option the user selected, as in the second
+                element of the ``options`` pairs.
+        &#34;&#34;&#34;
+        prompt_components = [prompt, &#39;:\n&#39;]
+        for index, option in enumerate(options):
+            prompt_components.append(str(index + 1))
+            prompt_components.append(&#39;) &#39;)
+            prompt_components.append(option[0])
+            prompt_components.append(&#39;\n&#39;)
+        if default is not None:
+            default_value = str(default + 1)
+        else:
+            default_value = None
+        value = ServerCodeGenerator._input(
+            &#39;&#39;.join(prompt_components), default_value,
+            functools.partial(
+                ServerCodeGenerator._validate_1_to_n, len(options)))
+        return options[int(value) - 1][1]
 
     @staticmethod
     def _normalize_filename(filename):
@@ -973,7 +1021,7 @@ palette that the e-ink device supports.</p>
     def _validate_server_dir(dir_):
         &#34;&#34;&#34;Validate the server directory.
 
-        Raise a ``RuntimeError`` if the specified user entry is not a
+        Raise a ``ValueError`` if the specified user entry is not a
         valid server directory.
 
         Arguments:
@@ -982,7 +1030,7 @@ palette that the e-ink device supports.</p>
         try:
             absolute_dir = ServerCodeGenerator._normalize_filename(dir_)
         except OSError:
-            raise RuntimeError(
+            raise ValueError(
                 &#39;Error normalizing the filename {:s}&#39;.format(dir_))
 
         parent = os.path.dirname(absolute_dir)
@@ -994,7 +1042,7 @@ palette that the e-ink device supports.</p>
     def _validate_client_dir(server_dir, dir_):
         &#34;&#34;&#34;Validate the client directory.
 
-        Raise a ``RuntimeError`` if the specified user entry is not a
+        Raise a ``ValueError`` if the specified user entry is not a
         valid client directory.
 
         Arguments:
@@ -1004,7 +1052,7 @@ palette that the e-ink device supports.</p>
         try:
             absolute_dir = ServerCodeGenerator._normalize_filename(dir_)
         except OSError:
-            raise RuntimeError(
+            raise ValueError(
                 &#39;Error normalizing the filename {:s}&#39;.format(dir_))
 
         try:
@@ -1059,17 +1107,16 @@ palette that the e-ink device supports.</p>
             raise ValueError(&#39;Please enter a value&#39;)
 
     @staticmethod
-    def _validate_rotation(rotation_str):
-        &#34;&#34;&#34;Validate the rotation.
-
-        Raise a ``ValueError`` if the specified user entry is not a
-        valid device rotation.
+    def _is_positive_int(value):
+        &#34;&#34;&#34;Return whether the specified user entry is a positive integer.
 
         Arguments:
-            rotation_str (str): The user entry.
+            value (str): The user entry.
+
+        Returns:
+            bool: The result.
         &#34;&#34;&#34;
-        if rotation_str not in [&#39;1&#39;, &#39;2&#39;, &#39;3&#39;, &#39;4&#39;]:
-            raise ValueError(&#39;The rotation must be 1 - 4&#39;)
+        return re.search(r&#39;^[1-9]\d*$&#39;, value) is not None
 
     @staticmethod
     def _validate_positive_int(value):
@@ -1081,8 +1128,22 @@ palette that the e-ink device supports.</p>
         Arguments:
             value (str): The user entry.
         &#34;&#34;&#34;
-        if not re.search(r&#39;^[1-9]\d*$&#39;, value):
+        if not ServerCodeGenerator._is_positive_int(value):
             raise ValueError(&#39;Please enter a positive integer&#39;)
+
+    @staticmethod
+    def _validate_1_to_n(n, value):
+        &#34;&#34;&#34;Validate an integer from 1 to ``n``.
+
+        Raise a ``ValueError`` if the specified user entry is not an
+        integer from 1 to ``n``.
+
+        Arguments:
+            n (int): The maximum value.
+            value (str): The user entry.
+        &#34;&#34;&#34;
+        if not ServerCodeGenerator._is_positive_int(value) or int(value) &gt; n:
+            raise ValueError(&#39;Please enter 1 - {:d}&#39;.format(n))
 
     @staticmethod
     def _local_ip_address():
@@ -1170,65 +1231,95 @@ palette that the e-ink device supports.</p>
             &#39;Wi-Fi SSID for device to connect to&#39;, connected_ssid,
             ServerCodeGenerator._validate_non_empty)
         wi_fi_password = ServerCodeGenerator._input(
-            &#39;Password for Wi-Fi (leave blank if none)&#39;, None, None, True)
+            &#39;Password for Wi-Fi (leave blank if none)&#39;, &#39;&#39;, None, True)
 
-        rotation_str = ServerCodeGenerator._input(
-            &#39;Device rotation:\n&#39;
-            &#39;1) Portrait right (bottom of device on right)\n&#39;
-            &#39;2) Landscape upside down\n&#39;
-            &#39;3) Portrait left (bottom of device on left)\n&#39;
-            &#39;4) Landscape\n&#39;,
-            &#39;4&#39;, ServerCodeGenerator._validate_rotation)
+        device = ServerCodeGenerator._input_multiple_choice(
+            &#39;Device&#39;,
+            [
+                (&#39;Inkplate 2&#39;, Device(212, 104, &#39;BLACK_WHITE_AND_RED&#39;)),
+                (&#39;Inkplate 6&#39;, Device(800, 600, &#39;THREE_BIT_GRAYSCALE&#39;)),
+                (&#39;Inkplate 6COLOR&#39;, Device(600, 448, &#39;SEVEN_COLOR&#39;)),
+                (&#39;Inkplate 6PLUS&#39;, Device(1024, 758, &#39;THREE_BIT_GRAYSCALE&#39;)),
+                (&#39;Inkplate 10&#39;, Device(1200, 825, &#39;THREE_BIT_GRAYSCALE&#39;)),
+                (&#39;Other/enter parameters manually&#39;, None)],
+            None)
+        rotation = ServerCodeGenerator._input_multiple_choice(
+            &#39;Device rotation&#39;,
+            [
+                (
+                    &#39;Portrait right (bottom of device on right)&#39;,
+                    Rotation.PORTRAIT_RIGHT),
+                (&#39;Landscape upside down&#39;, Rotation.LANDSCAPE_UPSIDE_DOWN),
+                (
+                    &#39;Portrait left (bottom of device on left)&#39;,
+                    Rotation.PORTRAIT_LEFT),
+                (&#39;Landscape&#39;, Rotation.LANDSCAPE)],
+            3)
 
-        default_width = &#39;800&#39;
-        default_height = &#39;600&#39;
-        if (rotation_str == str(Rotation.LANDSCAPE.value) or
-                rotation_str == str(Rotation.LANDSCAPE_UPSIDE_DOWN.value)):
-            width_prompt = &#39;Device width in pixels&#39;
-            height_prompt = &#39;Device height in pixels&#39;
+        if device is not None:
+            if (rotation == Rotation.LANDSCAPE or
+                    rotation == Rotation.LANDSCAPE_UPSIDE_DOWN):
+                width = device.width
+                height = device.height
+            else:
+                width = device.height
+                height = device.width
+            palette_name = device.palette_name
         else:
-            width_prompt = &#39;Device width in pixels, after rotation&#39;
-            height_prompt = &#39;Device height in pixels, after rotation&#39;
-            default_width, default_height = default_height, default_width
-        width = ServerCodeGenerator._input(
-            width_prompt, default_width,
-            ServerCodeGenerator._validate_positive_int)
-        height = ServerCodeGenerator._input(
-            height_prompt, default_height,
-            ServerCodeGenerator._validate_positive_int)
+            if (rotation == Rotation.LANDSCAPE or
+                    rotation == Rotation.LANDSCAPE_UPSIDE_DOWN):
+                width_prompt = &#39;Device width in pixels&#39;
+                height_prompt = &#39;Device height in pixels&#39;
+            else:
+                width_prompt = &#39;Device width in pixels, after rotation&#39;
+                height_prompt = &#39;Device height in pixels, after rotation&#39;
+            width = int(
+                ServerCodeGenerator._input(
+                    width_prompt, None,
+                    ServerCodeGenerator._validate_positive_int))
+            height = int(
+                ServerCodeGenerator._input(
+                    height_prompt, None,
+                    ServerCodeGenerator._validate_positive_int))
+            palette_name = ServerCodeGenerator._input_multiple_choice(
+                &#39;Color palette&#39;,
+                [
+                    (&#39;3-bit grayscale&#39;, &#39;THREE_BIT_GRAYSCALE&#39;),
+                    (&#39;Black, white, and red&#39;, &#39;BLACK_WHITE_AND_RED&#39;),
+                    (&#39;7-color&#39;, &#39;SEVEN_COLOR&#39;)],
+                0)
         return (
-            server_dir, client_dir, url, ssid, wi_fi_password, rotation_str,
-            width, height)
+            server_dir, client_dir, url, ssid, wi_fi_password, rotation, width,
+            height, palette_name)
 
     @staticmethod
-    def _eval_template(server_dir, filename, params):
+    def _eval_template(template_filename, output_filename, params):
         &#34;&#34;&#34;Evaluate a source code template.
 
         This reads the template at
-        assets/server_skeleton/[filename].tpl, performs string
+        assets/server_skeleton/[template_filename], performs string
         substitutions using ``string.Template.substitute(params)``, and
-        stores the result in [server_dir]/[filename].
+        stores the result in ``output_filename``.
 
         Arguments:
-            server_dir (str): The directory in which to store the
-                resulting file.
-            filename (str): The filename of the resulting file,
+            template_filename (str): The filename of the template file,
                 excluding the directory.
+            output_filename (str): The filename of the resulting file.
             params (dict&lt;str, str&gt;): The parameters to the template.
         &#34;&#34;&#34;
         input_filename = os.path.join(
-            Project.server_skeleton_dir(), &#39;{:s}.tpl&#39;.format(filename))
+            Project.server_skeleton_dir(), template_filename)
         with open(input_filename, &#39;r&#39;) as file:
             template = file.read()
 
         contents = string.Template(template).substitute(params)
-        output_filename = os.path.join(server_dir, filename)
         with open(output_filename, &#39;w&#39;) as file:
             file.write(contents)
 
     @staticmethod
     def _write_gen_client_code(
-            server_dir, client_dir, url, ssid, wi_fi_password, rotation):
+            server_dir, client_dir, url, ssid, wi_fi_password, rotation,
+            palette_name):
         &#34;&#34;&#34;Write the contents of the gen_client_code.py file.
 
         This contains code for generating the client&#39;s source code.
@@ -1245,7 +1336,10 @@ palette that the e-ink device supports.</p>
                 the client should connect to. If this is ``&#39;&#39;``, then
                 there is no password.
             rotation (Rotation): The rotation to use when drawing to the
-                Inkplate device.
+                e-ink device.
+            palette_name (str): The name of the ``Palette`` constant for
+                the palette to use. The palette is given by
+                ``getattr(Palette, palette_name)``.
         &#34;&#34;&#34;
         import_os = &#39;&#39;
         import_separator = &#39;&#39;
@@ -1277,6 +1371,11 @@ palette that the e-ink device supports.</p>
                 rotation.name)
             import_rotation = &#39;from eink.generate import Rotation\n&#39;
 
+        if palette_name == &#39;THREE_BIT_GRAYSCALE&#39;:
+            set_palette = &#39;&#39;
+        else:
+            set_palette = &#39;\n    config.set_palette(MyServer.PALETTE)&#39;
+
         if os.path.dirname(client_dir) != server_dir:
             set_client_dir = &#39;    dir_ = {:s}&#39;.format(repr(client_dir))
         else:
@@ -1289,13 +1388,15 @@ palette that the e-ink device supports.</p>
             import_separator = &#39;\n&#39;
 
         ServerCodeGenerator._eval_template(
-            server_dir, &#39;gen_client_code.py&#39;, {
+            &#39;gen_client_code.py.tpl&#39;,
+            os.path.join(server_dir, &#39;gen_client_code.py&#39;), {
                 &#39;import_json&#39;: import_json,
                 &#39;import_os&#39;: import_os,
                 &#39;import_rotation&#39;: import_rotation,
                 &#39;import_separator&#39;: import_separator,
                 &#39;read_secrets&#39;: read_secrets,
                 &#39;set_client_dir&#39;: set_client_dir,
+                &#39;set_palette&#39;: set_palette,
                 &#39;set_rotation&#39;: set_rotation,
                 &#39;ssid&#39;: repr(ssid),
                 &#39;url&#39;: repr(url),
@@ -1304,7 +1405,8 @@ palette that the e-ink device supports.</p>
 
     @staticmethod
     def _gen_client_code(
-            client_dir, url, ssid, wi_fi_password, rotation, width, height):
+            client_dir, url, ssid, wi_fi_password, rotation, width, height,
+            palette_name):
         &#34;&#34;&#34;Generate the client code for the skeleton.
 
         Arguments:
@@ -1317,26 +1419,29 @@ palette that the e-ink device supports.</p>
                 the client should connect to. If this is ``&#39;&#39;``, then
                 there is no password.
             rotation (Rotation): The rotation to use when drawing to the
-                Inkplate device.
-            width (str): The width of the Inkplate device, as a string,
+                e-ink device.
+            width (int): The width of the e-ink device in pixels, after
+                applying the rotation suggested by ``rotation``.
+            height (int): The height of the e-ink device in pixels,
                 after applying the rotation suggested by ``rotation``.
-            height (str): The height of the Inkplate device, as a
-                string, after applying the rotation suggested by
-                ``rotation``.
+            palette_name (str): The name of the ``Palette`` constant for
+                the palette to use. The palette is given by
+                ``getattr(Palette, palette_name)``.
         &#34;&#34;&#34;
-        status_images = StatusImages.create_default(int(width), int(height))
+        status_images = StatusImages.create_default(width, height)
         config = ClientConfig(WebTransport(url), status_images)
         if wi_fi_password:
             config.add_wi_fi_network(ssid, wi_fi_password)
         else:
             config.add_wi_fi_network(ssid, None)
         config.set_rotation(rotation)
+        config.set_palette(getattr(Palette, palette_name))
         ClientCodeGenerator.gen(config, client_dir)
 
     @staticmethod
     def _gen_skeleton(
-            server_dir, client_dir, url, ssid, wi_fi_password, rotation_str,
-            width, height):
+            server_dir, client_dir, url, ssid, wi_fi_password, rotation, width,
+            height, palette_name):
         &#34;&#34;&#34;Generate a skeleton server.
 
         Arguments:
@@ -1350,15 +1455,15 @@ palette that the e-ink device supports.</p>
             wi_fi_password (str): The password of the Wi-Fi network that
                 the client should connect to. If this is ``&#39;&#39;``, then
                 there is no password.
-            rotation_str (str): The rotation to use when drawing to the
-                Inkplate device. This is the string representation of
-                the value of the relevant ``Rotation``.
-            width (str): The width of the Inkplate device, as a string,
-                after applying the rotation suggested by
-                ``rotation_str``.
-            height (str): The height of the Inkplate device, as a
-                string, after applying the rotation suggested by
-                ``rotation_str``.
+            rotation (Rotation): The rotation to use when drawing to the
+                e-ink device.
+            width (int): The width of the e-ink device in pixels, after
+                applying the rotation suggested by ``rotation``.
+            height (int): The height of the e-ink device in pixels,
+                after applying the rotation suggested by ``rotation``.
+            palette_name (str): The name of the ``Palette`` constant for
+                the palette to use. The palette is given by
+                ``getattr(Palette, palette_name)``.
         &#34;&#34;&#34;
         server_dir = ServerCodeGenerator._normalize_filename(server_dir)
         assets_dir = os.path.join(server_dir, &#39;assets&#39;)
@@ -1370,10 +1475,57 @@ palette that the e-ink device supports.</p>
         if not os.path.exists(client_dir):
             os.mkdir(client_dir)
 
+        if width &gt;= 440 and height &gt;= 370:
+            template_filename = &#39;my_server.py.tpl&#39;
+        else:
+            template_filename = &#39;my_server_low_res.py.tpl&#39;
+
+        if palette_name == &#39;THREE_BIT_GRAYSCALE&#39;:
+            import_palette = &#39;&#39;
+            palette_constant = &#39;&#39;
+            palette_method = &#39;&#39;
+            palette_arg = &#39;&#39;
+        else:
+            import_palette = &#39;from eink.image import Palette\n&#39;
+            palette_constant = (
+                &#39;\n    # The palette to use\n&#39;
+                &#39;    PALETTE = Palette.{:s}\n&#39;.format(palette_name))
+            palette_method = (
+                &#39;\n    def palette(self):\n&#39;
+                &#39;        return MyServer.PALETTE\n&#39;)
+            palette_arg = &#39;, MyServer.PALETTE&#39;
+
+        if getattr(Palette, palette_name)._is_grayscale:
+            image_line_break = &#39;&#39;
+            image_mode = &#34;&#39;L&#39;&#34;
+            background_color = &#39;255&#39;
+            header_text_color = &#39;0&#39;
+            body_text_color = &#39;0&#39;
+        else:
+            image_line_break = &#39;\n            &#39;
+            image_mode = &#34;&#39;RGB&#39;&#34;
+            background_color = &#39;(255, 255, 255)&#39;
+            body_text_color = &#39;(0, 0, 0)&#39;
+            if palette_name == &#39;SEVEN_COLOR&#39;:
+                header_text_color = &#39;(67, 138, 28)&#39;
+            elif palette_name == &#39;BLACK_WHITE_AND_RED&#39;:
+                header_text_color = &#39;(255, 0, 0)&#39;
+            else:
+                header_text_color = &#39;(0, 0, 0)&#39;
+
         ServerCodeGenerator._eval_template(
-            server_dir, &#39;my_server.py&#39;, {
-                &#39;height&#39;: height,
-                &#39;width&#39;: width,
+            template_filename, os.path.join(server_dir, &#39;my_server.py&#39;), {
+                &#39;background_color&#39;: background_color,
+                &#39;body_text_color&#39;: body_text_color,
+                &#39;header_text_color&#39;: header_text_color,
+                &#39;height&#39;: str(height),
+                &#39;image_line_break&#39;: image_line_break,
+                &#39;image_mode&#39;: image_mode,
+                &#39;import_palette&#39;: import_palette,
+                &#39;palette_arg&#39;: palette_arg,
+                &#39;palette_constant&#39;: palette_constant,
+                &#39;palette_method&#39;: palette_method,
+                &#39;width&#39;: str(width),
             })
 
         parsed_url = urlparse(url)
@@ -1382,7 +1534,8 @@ palette that the e-ink device supports.</p>
         else:
             path = &#39;/&#39;
         ServerCodeGenerator._eval_template(
-            server_dir, &#39;app.py&#39;, {&#39;path&#39;: repr(path)})
+            &#39;app.py.tpl&#39;, os.path.join(server_dir, &#39;app.py&#39;),
+            {&#39;path&#39;: repr(path)})
 
         shutil.copy(
             os.path.join(Project.server_skeleton_dir(), &#39;requirements.txt&#39;),
@@ -1400,11 +1553,12 @@ palette that the e-ink device supports.</p>
                 file.write(json.dumps(secrets, indent=4))
                 file.write(&#39;\n&#39;)
 
-        rotation = Rotation(int(rotation_str))
         ServerCodeGenerator._write_gen_client_code(
-            server_dir, client_dir, url, ssid, wi_fi_password, rotation)
+            server_dir, client_dir, url, ssid, wi_fi_password, rotation,
+            palette_name)
         ServerCodeGenerator._gen_client_code(
-            client_dir, url, ssid, wi_fi_password, rotation, width, height)</code></pre>
+            client_dir, url, ssid, wi_fi_password, rotation, width, height,
+            palette_name)</code></pre>
 </details>
 <h3>Static methods</h3>
 <dl>
@@ -1556,7 +1710,10 @@ rotation (as in <code>ClientConfig.set_rotation</code>).</dd>
         Returns:
             Image: The image.
         &#34;&#34;&#34;
-        return self._default_image(&#39;connecting.png&#39;)
+        if self._width &gt;= 320 and self._height &gt;= 220:
+            return self._default_image(&#39;connecting.png&#39;)
+        else:
+            return self._default_image(&#39;connecting_low_res.png&#39;)
 
     def default_low_battery_image(self):
         &#34;&#34;&#34;Return the &#34;default&#34; low battery image.
@@ -1568,7 +1725,10 @@ rotation (as in <code>ClientConfig.set_rotation</code>).</dd>
         Returns:
             Image: The image.
         &#34;&#34;&#34;
-        return self._default_image(&#39;low_battery.png&#39;)
+        if self._width &gt;= 208 and self._height &gt;= 130:
+            return self._default_image(&#39;low_battery.png&#39;)
+        else:
+            return self._default_image(&#39;low_battery_low_res.png&#39;)
 
     @staticmethod
     def create_default(width, height):
@@ -1677,7 +1837,10 @@ library provides as a default.</p>
     Returns:
         Image: The image.
     &#34;&#34;&#34;
-    return self._default_image(&#39;connecting.png&#39;)</code></pre>
+    if self._width &gt;= 320 and self._height &gt;= 220:
+        return self._default_image(&#39;connecting.png&#39;)
+    else:
+        return self._default_image(&#39;connecting_low_res.png&#39;)</code></pre>
 </details>
 </dd>
 <dt id="eink.generate.StatusImages.default_low_battery_image"><code class="name flex">
@@ -1707,7 +1870,10 @@ low on battery. This is a standard image that the
     Returns:
         Image: The image.
     &#34;&#34;&#34;
-    return self._default_image(&#39;low_battery.png&#39;)</code></pre>
+    if self._width &gt;= 208 and self._height &gt;= 130:
+        return self._default_image(&#39;low_battery.png&#39;)
+    else:
+        return self._default_image(&#39;low_battery_low_res.png&#39;)</code></pre>
 </details>
 </dd>
 <dt id="eink.generate.StatusImages.set_image"><code class="name flex">

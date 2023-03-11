@@ -129,7 +129,10 @@ class StatusImages:
         Returns:
             Image: The image.
         &#34;&#34;&#34;
-        return self._default_image(&#39;connecting.png&#39;)
+        if self._width &gt;= 320 and self._height &gt;= 220:
+            return self._default_image(&#39;connecting.png&#39;)
+        else:
+            return self._default_image(&#39;connecting_low_res.png&#39;)
 
     def default_low_battery_image(self):
         &#34;&#34;&#34;Return the &#34;default&#34; low battery image.
@@ -141,7 +144,10 @@ class StatusImages:
         Returns:
             Image: The image.
         &#34;&#34;&#34;
-        return self._default_image(&#39;low_battery.png&#39;)
+        if self._width &gt;= 208 and self._height &gt;= 130:
+            return self._default_image(&#39;low_battery.png&#39;)
+        else:
+            return self._default_image(&#39;low_battery_low_res.png&#39;)
 
     @staticmethod
     def create_default(width, height):
@@ -313,7 +319,10 @@ rotation (as in <code>ClientConfig.set_rotation</code>).</dd>
         Returns:
             Image: The image.
         &#34;&#34;&#34;
-        return self._default_image(&#39;connecting.png&#39;)
+        if self._width &gt;= 320 and self._height &gt;= 220:
+            return self._default_image(&#39;connecting.png&#39;)
+        else:
+            return self._default_image(&#39;connecting_low_res.png&#39;)
 
     def default_low_battery_image(self):
         &#34;&#34;&#34;Return the &#34;default&#34; low battery image.
@@ -325,7 +334,10 @@ rotation (as in <code>ClientConfig.set_rotation</code>).</dd>
         Returns:
             Image: The image.
         &#34;&#34;&#34;
-        return self._default_image(&#39;low_battery.png&#39;)
+        if self._width &gt;= 208 and self._height &gt;= 130:
+            return self._default_image(&#39;low_battery.png&#39;)
+        else:
+            return self._default_image(&#39;low_battery_low_res.png&#39;)
 
     @staticmethod
     def create_default(width, height):
@@ -434,7 +446,10 @@ library provides as a default.</p>
     Returns:
         Image: The image.
     &#34;&#34;&#34;
-    return self._default_image(&#39;connecting.png&#39;)</code></pre>
+    if self._width &gt;= 320 and self._height &gt;= 220:
+        return self._default_image(&#39;connecting.png&#39;)
+    else:
+        return self._default_image(&#39;connecting_low_res.png&#39;)</code></pre>
 </details>
 </dd>
 <dt id="eink.generate.status_images.StatusImages.default_low_battery_image"><code class="name flex">
@@ -464,7 +479,10 @@ low on battery. This is a standard image that the
     Returns:
         Image: The image.
     &#34;&#34;&#34;
-    return self._default_image(&#39;low_battery.png&#39;)</code></pre>
+    if self._width &gt;= 208 and self._height &gt;= 130:
+        return self._default_image(&#39;low_battery.png&#39;)
+    else:
+        return self._default_image(&#39;low_battery_low_res.png&#39;)</code></pre>
 </details>
 </dd>
 <dt id="eink.generate.status_images.StatusImages.set_image"><code class="name flex">
