@@ -837,7 +837,7 @@ palette that the e-ink device supports.</p>
 </dd>
 <dt id="eink.generate.Rotation"><code class="flex name class">
 <span>class <span class="ident">Rotation</span></span>
-<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
+<span>(</span><span>*values)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>A rotation to use when drawing to the Inkplate device.</p></section>
@@ -1241,11 +1241,14 @@ palette that the e-ink device supports.</p>
                     &#39;Inkplate 4 TEMPERA&#39;,
                     Device(600, 600, &#39;THREE_BIT_GRAYSCALE&#39;)),
                 (&#39;Inkplate 5&#39;, Device(960, 540, &#39;THREE_BIT_GRAYSCALE&#39;)),
+                (&#39;Inkplate 5 Gen2&#39;, Device(1280, 720, &#39;THREE_BIT_GRAYSCALE&#39;)),
                 (&#39;Inkplate 6&#39;, Device(800, 600, &#39;THREE_BIT_GRAYSCALE&#39;)),
                 (&#39;Inkplate 6COLOR&#39;, Device(600, 448, &#39;SEVEN_COLOR&#39;)),
+                (&#39;Inkplate 6FLICK&#39;, Device(1024, 758, &#39;THREE_BIT_GRAYSCALE&#39;)),
                 (&#39;Inkplate 6MOTION&#39;, Device(1024, 758, &#39;FOUR_BIT_GRAYSCALE&#39;)),
                 (&#39;Inkplate 6PLUS&#39;, Device(1024, 758, &#39;THREE_BIT_GRAYSCALE&#39;)),
                 (&#39;Inkplate 10&#39;, Device(1200, 825, &#39;THREE_BIT_GRAYSCALE&#39;)),
+                (&#39;Inkplate 13SPECTRA&#39;, Device(1600, 1200, &#39;SIX_COLOR&#39;)),
                 (&#39;Other/enter parameters manually&#39;, None)],
             None)
         rotation = ServerCodeGenerator._input_multiple_choice(
@@ -1292,6 +1295,7 @@ palette that the e-ink device supports.</p>
                     (&#39;3-bit grayscale&#39;, &#39;THREE_BIT_GRAYSCALE&#39;),
                     (&#39;4-bit grayscale&#39;, &#39;FOUR_BIT_GRAYSCALE&#39;),
                     (&#39;Black, white, and red&#39;, &#39;BLACK_WHITE_AND_RED&#39;),
+                    (&#39;6-color&#39;, &#39;SIX_COLOR&#39;),
                     (&#39;7-color&#39;, &#39;SEVEN_COLOR&#39;)],
                 0)
         return (
